@@ -1,24 +1,61 @@
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Login from "./Login";
+import Dashboard from "./Dashboard";
+import DepartmentPage from "./DepartmentPage";
+import { useState } from "react";
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    !!localStorage.getItem("token")
+  );
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <BrowserRouter>
+      <Routes>
+
+        {/* NOT LOGGED IN */}
+        {!isLoggedIn ? (
+          <>
+            <Route
+              path="/"
+              element={<Login setIsLoggedIn={setIsLoggedIn} />}
+            />
+
+            <Route
+              path="*"
+              element={<Navigate to="/" />}
+            />
+          </>
+        ) : (
+          <>
+            {/* LOGGED IN */}
+
+            <Route
+              path="/"
+              element={<Navigate to="/department" />}
+            />
+
+            <Route
+              path="/department"
+              element={<DepartmentPage />}
+            />
+
+            <Route
+              path="/dashboard"
+              element={
+                <Dashboard setIsLoggedIn={setIsLoggedIn} />
+              }
+            />
+
+            <Route
+              path="*"
+              element={<Navigate to="/department" />}
+            />
+          </>
+        )}
+
+      </Routes>
+    </BrowserRouter>
   );
 }
 
