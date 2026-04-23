@@ -13,32 +13,22 @@ function Prediction({ department }) {
 
   const API_URL = "https://smartlearn-backend-1-etsn.onrender.com";
 
-  // Grade Function
-  const getGrade = (score) => {
-    if (score >= 90) return "S";
-    if (score >= 80) return "A";
-    if (score >= 70) return "B";
-    if (score >= 60) return "C";
-    if (score >= 50) return "D";
-    return "Fail";
+  // 🎯 Grade Logic (TOTAL)
+  const getGrade = (total) => {
+    if (total >= 91) return "S";
+    if (total >= 81) return "A";
+    if (total >= 71) return "B";
+    if (total >= 61) return "C";
+    if (total >= 51) return "D";
+    return "Reappear";
   };
 
-  // Attendance Status
   const getAttendanceStatus = (attendance) => {
     if (attendance >= 75) return "Eligible ✅";
     if (attendance >= 65) return "Condonation ⚠️";
     return "Not Eligible ❌";
   };
 
-  // Feedback Function
-  const getFeedback = (attendance, total) => {
-    if (attendance < 65) return "Low attendance! Improve immediately 📉";
-    if (total<50) return "Focus more on academics 📚";
-    if (total >= 80) return "Excellent performance 🚀";
-    return "Good, but can improve 👍";
-  };
-
-  // Predict Function
   const handlePredict = async () => {
     setLoading(true);
     setError("");
@@ -59,22 +49,31 @@ function Prediction({ department }) {
       });
 
       setResult(response.data);
-    } catch (err) {
+    } catch {
       setError("Prediction failed. Try again!");
     }
 
     setLoading(false);
   };
 
+  // ✅ TOTAL + FEEDBACK TYPE (MAIN FIX)
+  const total = Number(internal) + Number(external);
+
+  const feedbackType =
+    Number(attendance) < 65
+      ? "poor"
+      : total >= 80
+      ? "excellent"
+      : "good";
+
   return (
     <div style={styles.page}>
       <div style={styles.mainWrapper}>
-        
+
         {/* LEFT CARD */}
         <div style={styles.card}>
           <h2 style={styles.heading}>📊 Performance Prediction</h2>
 
-          {/* SUBJECT */}
           <select
             style={styles.input}
             value={subject}
@@ -109,7 +108,6 @@ function Prediction({ department }) {
             )}
           </select>
 
-          {/* INPUTS */}
           <input
             style={styles.input}
             placeholder="Attendance (%)"
@@ -151,81 +149,49 @@ function Prediction({ department }) {
             <p><b>Internal Marks:</b> {internal}/40</p>
             <p><b>External Marks:</b> {external}/60</p>
 
-            <p><b>Total:</b> {Number(internal) + Number(external)}/100</p>
-            <p><b>Grade:</b> {getGrade(Number(internal) + Number(external))}</p>
+            <p><b>Total:</b> {total}/100</p>
+            <p><b>Grade:</b> {getGrade(total)}</p>
+
             <hr />
 
             <h4>💡 Feedback</h4>
             <p>
-              {result.feedback ||
-                getFeedback(Number(attendance), 
-                Number(internal) + Number(external))
-              }
+              {feedbackType === "poor" && "Needs improvement ⚠️"}
+              {feedbackType === "good" && "Good, but can improve 👍"}
+              {feedbackType === "excellent" && "Excellent performance 🚀"}
             </p>
 
             <hr />
 
             <h4>🎯 Recommended Courses</h4>
 
-            {result.recommendations &&
-            result.recommendations.length > 0 ? (
-              result.recommendations.map((course, index) => (
-                <div key={index} style={styles.courseBox}>
-                  <p>
-                    <b>{course.title}</b> ({course.level})
-                  </p>
-                  <a
-                    href={course.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={styles.link}
-                  >
-                    Start Learning ▶
-                  </a>
-                </div>
-              ))
-            ) : (
-              (() => {
-  const total = Number(internal) + Number(external);
-
-  if (total < 60) {
-    return (
-      <>
-        <div style={styles.courseBox}>
-          <p><b>Basics with W3Schools</b> (Beginner)</p>
-          <a href="https://www.w3schools.com/" target="_blank" rel="noreferrer" style={styles.link}>
-            Start Learning ▶
-          </a>
-        </div>
-      </>
-    );
-  }
-
-  if (total < 80) {
-    return (
-      <>
-        <div style={styles.courseBox}>
-          <p><b>Practice on GeeksforGeeks</b> (Intermediate)</p>
-          <a href="https://www.geeksforgeeks.org/" target="_blank" rel="noreferrer" style={styles.link}>
-            Start Learning ▶
-          </a>
-        </div>
-      </>
-    );
-  }
-
-  return (
-    <>
-      <div style={styles.courseBox}>
-        <p><b>Advanced Courses (Coursera)</b> (Advanced)</p>
-        <a href="https://www.coursera.org/" target="_blank" rel="noreferrer" style={styles.link}>
-          Start Learning ▶
-        </a>
-      </div>
-    </>
-  );
-})()
+            {feedbackType === "poor" && (
+              <div style={styles.courseBox}>
+                <p><b>Basics with W3Schools</b> (Beginner)</p>
+                <a href="https://www.w3schools.com/" target="_blank" rel="noreferrer" style={styles.link}>
+                  Start Learning ▶
+                </a>
+              </div>
             )}
+
+            {feedbackType === "good" && (
+              <div style={styles.courseBox}>
+                <p><b>Practice on GeeksforGeeks</b> (Intermediate)</p>
+                <a href="https://www.geeksforgeeks.org/" target="_blank" rel="noreferrer" style={styles.link}>
+                  Start Learning ▶
+                </a>
+              </div>
+            )}
+
+            {feedbackType === "excellent" && (
+              <div style={styles.courseBox}>
+                <p><b>Advanced Courses (Coursera)</b> (Advanced)</p>
+                <a href="https://www.coursera.org/" target="_blank" rel="noreferrer" style={styles.link}>
+                  Start Learning ▶
+                </a>
+              </div>
+            )}
+
           </div>
         )}
       </div>
@@ -233,7 +199,7 @@ function Prediction({ department }) {
   );
 }
 
-// STYLES
+/* STYLES */
 const styles = {
   page: {
     minHeight: "100vh",
@@ -252,10 +218,8 @@ const styles = {
   card: {
     width: "420px",
     background: "rgba(255,255,255,0.85)",
-    backdropFilter: "blur(10px)",
     borderRadius: "18px",
     padding: "28px",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
   },
 
   resultCard: {
@@ -263,18 +227,7 @@ const styles = {
     background: "#ffffff",
     borderRadius: "18px",
     padding: "28px",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
     borderLeft: "6px solid #4CAF50",
-  },
-
-  heading: {
-    marginBottom: "20px",
-    color: "#222",
-  },
-
-  reportTitle: {
-    color: "#2e7d32",
-    marginBottom: "18px",
   },
 
   input: {
@@ -283,25 +236,19 @@ const styles = {
     marginBottom: "14px",
     borderRadius: "10px",
     border: "1px solid #ccc",
-    fontSize: "15px",
   },
 
   button: {
     width: "100%",
     padding: "14px",
-    border: "none",
     borderRadius: "10px",
-    background: "linear-gradient(135deg, #43a047, #66bb6a)",
+    background: "#4CAF50",
     color: "white",
-    fontSize: "16px",
-    fontWeight: "bold",
-    cursor: "pointer",
+    border: "none",
   },
 
   error: {
     color: "red",
-    marginTop: "12px",
-    fontWeight: "500",
   },
 
   courseBox: {
