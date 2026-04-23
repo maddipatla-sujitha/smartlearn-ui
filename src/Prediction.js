@@ -3,8 +3,8 @@ import { useState } from "react";
 
 function Prediction({ department }) {
   const [attendance, setAttendance] = useState("");
-  const [quiz, setQuiz] = useState("");
-  const [assignment, setAssignment] = useState("");
+  const [internal, setInternal] = useState("");
+  const [external, setExternal] = useState("");
   const [subject, setSubject] = useState("");
 
   const [result, setResult] = useState(null);
@@ -13,13 +13,14 @@ function Prediction({ department }) {
 
   const API_URL = "https://smartlearn-backend-1-etsn.onrender.com";
 
-  const getGrade = (score) => {
-    if (score >= 90) return "S";
-    if (score >= 80) return "A";
-    if (score >= 70) return "B";
-    if (score >= 60) return "C";
-    if (score >= 50) return "D";
-    return "Fail";
+  // ✅ Grade based on TOTAL (out of 100)
+  const getGrade = (total) => {
+    if (total >= 91) return "S";
+    if (total >= 81) return "A";
+    if (total >= 71) return "B";
+    if (total >= 61) return "C";
+    if (total >= 51) return "D";
+    return "Reappear";
   };
 
   const getAttendanceStatus = (attendance) => {
@@ -28,10 +29,10 @@ function Prediction({ department }) {
     return "Not Eligible ❌";
   };
 
-  const getFeedback = (attendance, quiz, assignment) => {
+  const getFeedback = (attendance, total) => {
     if (attendance < 65) return "Low attendance! Improve immediately 📉";
-    if (quiz < 50 || assignment < 50) return "Focus more on academics 📚";
-    if (quiz >= 80 && assignment >= 80) return "Excellent performance 🚀";
+    if (total < 50) return "You need serious improvement 📚";
+    if (total >= 85) return "Excellent performance 🚀";
     return "Good, but can improve 👍";
   };
 
@@ -45,18 +46,20 @@ function Prediction({ department }) {
       return;
     }
 
+    const total = Number(internal) + Number(external);
+
     try {
       const response = await axios.post(`${API_URL}/api/predict`, {
         attendance: Number(attendance),
-        quiz: Number(quiz),
-        assignment: Number(assignment),
+        internal: Number(internal),
+        external: Number(external),
         subject,
         department,
       });
 
-      setResult(response.data);
+      setResult({ ...response.data, total });
     } catch (err) {
-      setError("Prediction failed. Try again!");
+      setResult({ total }); // fallback if API fails
     }
 
     setLoading(false);
@@ -113,16 +116,16 @@ function Prediction({ department }) {
 
           <input
             style={styles.input}
-            placeholder="Quiz Score"
-            value={quiz}
-            onChange={(e) => setQuiz(e.target.value)}
+            placeholder="Internal Marks (out of 40)"
+            value={internal}
+            onChange={(e) => setInternal(e.target.value)}
           />
 
           <input
             style={styles.input}
-            placeholder="Assignment Score"
-            value={assignment}
-            onChange={(e) => setAssignment(e.target.value)}
+            placeholder="External Marks (out of 60)"
+            value={external}
+            onChange={(e) => setExternal(e.target.value)}
           />
 
           <button style={styles.button} onClick={handlePredict}>
@@ -140,49 +143,18 @@ function Prediction({ department }) {
             <p><b>Subject:</b> {subject}</p>
             <p><b>Attendance:</b> {attendance}%</p>
             <p><b>Status:</b> {getAttendanceStatus(Number(attendance))}</p>
-            <p><b>Quiz Score:</b> {quiz}</p>
-            <p><b>Grade:</b> {getGrade(Number(quiz))}</p>
-            <p><b>Assignment Score:</b> {assignment}</p>
-            <p><b>Grade:</b> {getGrade(Number(assignment))}</p>
+
+            <p><b>Internal Marks:</b> {internal}/40</p>
+            <p><b>External Marks:</b> {external}/60</p>
+
+            <p><b>Total:</b> {result.total}/100</p>
+            <p><b>Grade:</b> {getGrade(result.total)}</p>
 
             <hr />
 
             <h4>💡 Feedback</h4>
+            <p>{getFeedback(Number(attendance), result.total)}</p>
 
-            <p>
-              {result.feedback ||
-                getFeedback(
-                  Number(attendance),
-                  Number(quiz),
-                  Number(assignment)
-                )}
-            </p>
-
-            <hr />
-
-            <h4>🎯 Recommended Courses</h4>
-
-            {result.recommendations &&
-            result.recommendations.length > 0 ? (
-              result.recommendations.map((course, index) => (
-                <div key={index} style={styles.courseBox}>
-                  <p>
-                    <b>{course.title}</b> ({course.level})
-                  </p>
-
-                  <a
-                    href={course.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={styles.link}
-                  >
-                    Start Learning ▶
-                  </a>
-                </div>
-              ))
-            ) : (
-              <p>No recommendations available</p>
-            )}
           </div>
         )}
 
@@ -204,16 +176,15 @@ const styles = {
   },
 
   card: {
-    background: "rgba(255,255,255,0.85)",
-    backdropFilter: "blur(10px)",
-    borderRadius: "18px",
+    background: "rgba(255,255,255,0.9)",
+    borderRadius: "16px",
     padding: "28px",
     boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
   },
 
   resultCard: {
     background: "#ffffff",
-    borderRadius: "18px",
+    borderRadius: "16px",
     padding: "28px",
     boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
     borderLeft: "6px solid #4CAF50",
@@ -221,7 +192,6 @@ const styles = {
 
   heading: {
     marginBottom: "20px",
-    color: "#222",
   },
 
   reportTitle: {
@@ -235,7 +205,6 @@ const styles = {
     marginBottom: "14px",
     borderRadius: "10px",
     border: "1px solid #ccc",
-    boxSizing: "border-box",
   },
 
   button: {
@@ -243,29 +212,15 @@ const styles = {
     padding: "14px",
     border: "none",
     borderRadius: "10px",
-    background: "linear-gradient(135deg, #43a047, #66bb6a)",
+    background: "#4CAF50",
     color: "white",
-    fontSize: "16px",
     fontWeight: "bold",
     cursor: "pointer",
   },
 
   error: {
     color: "red",
-    marginTop: "12px",
-  },
-
-  courseBox: {
-    padding: "10px",
-    background: "#f5f5f5",
-    borderRadius: "10px",
-    marginBottom: "12px",
-  },
-
-  link: {
-    color: "#1976d2",
-    textDecoration: "none",
-    fontWeight: "600",
+    marginTop: "10px",
   },
 };
 
