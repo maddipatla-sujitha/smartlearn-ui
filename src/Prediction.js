@@ -13,29 +13,32 @@ function Prediction({ department }) {
 
   const API_URL = "https://smartlearn-backend-1-etsn.onrender.com";
 
-  // ✅ Grade based on TOTAL (out of 100)
-  const getGrade = (total) => {
-    if (total >= 91) return "S";
-    if (total >= 81) return "A";
-    if (total >= 71) return "B";
-    if (total >= 61) return "C";
-    if (total >= 51) return "D";
-    return "Reappear";
+  // Grade Function
+  const getGrade = (score) => {
+    if (score >= 90) return "S";
+    if (score >= 80) return "A";
+    if (score >= 70) return "B";
+    if (score >= 60) return "C";
+    if (score >= 50) return "D";
+    return "Fail";
   };
 
+  // Attendance Status
   const getAttendanceStatus = (attendance) => {
     if (attendance >= 75) return "Eligible ✅";
     if (attendance >= 65) return "Condonation ⚠️";
     return "Not Eligible ❌";
   };
 
+  // Feedback Function
   const getFeedback = (attendance, total) => {
     if (attendance < 65) return "Low attendance! Improve immediately 📉";
-    if (total < 50) return "You need serious improvement 📚";
-    if (total >= 85) return "Excellent performance 🚀";
+    if (total<50) return "Focus more on academics 📚";
+    if (total >= 80) return "Excellent performance 🚀";
     return "Good, but can improve 👍";
   };
 
+  // Predict Function
   const handlePredict = async () => {
     setLoading(true);
     setError("");
@@ -46,8 +49,6 @@ function Prediction({ department }) {
       return;
     }
 
-    const total = Number(internal) + Number(external);
-
     try {
       const response = await axios.post(`${API_URL}/api/predict`, {
         attendance: Number(attendance),
@@ -57,9 +58,9 @@ function Prediction({ department }) {
         department,
       });
 
-      setResult({ ...response.data, total });
+      setResult(response.data);
     } catch (err) {
-      setResult({ total }); // fallback if API fails
+      setError("Prediction failed. Try again!");
     }
 
     setLoading(false);
@@ -68,11 +69,12 @@ function Prediction({ department }) {
   return (
     <div style={styles.page}>
       <div style={styles.mainWrapper}>
-
+        
         {/* LEFT CARD */}
         <div style={styles.card}>
           <h2 style={styles.heading}>📊 Performance Prediction</h2>
 
+          {/* SUBJECT */}
           <select
             style={styles.input}
             value={subject}
@@ -107,6 +109,7 @@ function Prediction({ department }) {
             )}
           </select>
 
+          {/* INPUTS */}
           <input
             style={styles.input}
             placeholder="Attendance (%)"
@@ -141,50 +144,85 @@ function Prediction({ department }) {
             <h3 style={styles.reportTitle}>📈 Performance Report</h3>
 
             <p><b>Subject:</b> {subject}</p>
+
             <p><b>Attendance:</b> {attendance}%</p>
             <p><b>Status:</b> {getAttendanceStatus(Number(attendance))}</p>
 
             <p><b>Internal Marks:</b> {internal}/40</p>
             <p><b>External Marks:</b> {external}/60</p>
 
-            <p><b>Total:</b> {result.total}/100</p>
-            <p><b>Grade:</b> {getGrade(result.total)}</p>
-
+            <p><b>Total:</b> {Number(internal) + Number(external)}/100</p>
+            <p><b>Grade:</b> {getGrade(Number(internal) + Number(external))}</p>
             <hr />
 
             <h4>💡 Feedback</h4>
-            <p>{getFeedback(Number(attendance), result.total)}</p>
+            <p>
+              {result.feedback ||
+                getFeedback(Number(attendance), 
+                Number(internal) + Number(external))
+              }
+            </p>
 
+            <hr />
+
+            <h4>🎯 Recommended Courses</h4>
+
+            {result.recommendations &&
+            result.recommendations.length > 0 ? (
+              result.recommendations.map((course, index) => (
+                <div key={index} style={styles.courseBox}>
+                  <p>
+                    <b>{course.title}</b> ({course.level})
+                  </p>
+                  <a
+                    href={course.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={styles.link}
+                  >
+                    Start Learning ▶
+                  </a>
+                </div>
+              ))
+            ) : (
+              <p>No recommendations available</p>
+            )}
           </div>
         )}
-
       </div>
     </div>
   );
 }
 
+// STYLES
 const styles = {
   page: {
-    paddingBottom: "20px",
+    minHeight: "100vh",
+    padding: "30px",
+    background: "linear-gradient(to right, #eef2f7, #ffffff)",
   },
 
   mainWrapper: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    display: "flex",
     gap: "25px",
-    alignItems: "start",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    flexWrap: "wrap",
   },
 
   card: {
-    background: "rgba(255,255,255,0.9)",
-    borderRadius: "16px",
+    width: "420px",
+    background: "rgba(255,255,255,0.85)",
+    backdropFilter: "blur(10px)",
+    borderRadius: "18px",
     padding: "28px",
     boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
   },
 
   resultCard: {
+    width: "420px",
     background: "#ffffff",
-    borderRadius: "16px",
+    borderRadius: "18px",
     padding: "28px",
     boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
     borderLeft: "6px solid #4CAF50",
@@ -192,6 +230,7 @@ const styles = {
 
   heading: {
     marginBottom: "20px",
+    color: "#222",
   },
 
   reportTitle: {
@@ -205,6 +244,7 @@ const styles = {
     marginBottom: "14px",
     borderRadius: "10px",
     border: "1px solid #ccc",
+    fontSize: "15px",
   },
 
   button: {
@@ -212,15 +252,30 @@ const styles = {
     padding: "14px",
     border: "none",
     borderRadius: "10px",
-    background: "#4CAF50",
+    background: "linear-gradient(135deg, #43a047, #66bb6a)",
     color: "white",
+    fontSize: "16px",
     fontWeight: "bold",
     cursor: "pointer",
   },
 
   error: {
     color: "red",
-    marginTop: "10px",
+    marginTop: "12px",
+    fontWeight: "500",
+  },
+
+  courseBox: {
+    padding: "10px",
+    background: "#f5f5f5",
+    borderRadius: "10px",
+    marginBottom: "12px",
+  },
+
+  link: {
+    color: "#1976d2",
+    textDecoration: "none",
+    fontWeight: "600",
   },
 };
 
