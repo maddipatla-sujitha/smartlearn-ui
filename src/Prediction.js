@@ -185,7 +185,46 @@ function Prediction({ department }) {
                 </div>
               ))
             ) : (
-              <p>No recommendations available</p>
+              (() => {
+  const total = Number(internal) + Number(external);
+
+  if (total < 60) {
+    return (
+      <>
+        <div style={styles.courseBox}>
+          <p><b>Basics with W3Schools</b> (Beginner)</p>
+          <a href="https://www.w3schools.com/" target="_blank" rel="noreferrer" style={styles.link}>
+            Start Learning ▶
+          </a>
+        </div>
+      </>
+    );
+  }
+
+  if (total < 80) {
+    return (
+      <>
+        <div style={styles.courseBox}>
+          <p><b>Practice on GeeksforGeeks</b> (Intermediate)</p>
+          <a href="https://www.geeksforgeeks.org/" target="_blank" rel="noreferrer" style={styles.link}>
+            Start Learning ▶
+          </a>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div style={styles.courseBox}>
+        <p><b>Advanced Courses (Coursera)</b> (Advanced)</p>
+        <a href="https://www.coursera.org/" target="_blank" rel="noreferrer" style={styles.link}>
+          Start Learning ▶
+        </a>
+      </div>
+    </>
+  );
+})()
             )}
           </div>
         )}
